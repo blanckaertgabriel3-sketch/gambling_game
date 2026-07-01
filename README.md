@@ -1,6 +1,6 @@
 # gambling_game
-# Projet brouillon.
+## Projet brouillon.
 
 
 
-## Lancer le jeux avec la commande : node ./Game_Session.js
+### Lancer le jeux avec la commande : clear ; node ./Game_Session.js
