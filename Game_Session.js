@@ -1,6 +1,7 @@
 const readline = require('node:readline');
 
 const Red_Black_Game = require("./Red_Black_Game.js");
+const { resolve } = require('node:dns');
 
 
 class Game_Session {
@@ -9,6 +10,10 @@ class Game_Session {
 		this.money = this.start_money;
 		this.bet = 0;
 		this.last_bet = 0;
+		this.games_names = [
+			"Rouge ou Noir"
+		]
+		this.exit = "exit";
 	}
 	valid_bet(bet) {
 		if(!bet) {
@@ -47,30 +52,69 @@ class Game_Session {
 			}
 		}
 	}
+	async choose_game() {
+		const rl = new readline.createInterface({
+			input: process.stdin,
+			output: process.stdout,
+		});
+		while(true) {
+			const response = await new Promise(resolve => {
+				rl.question("Choix de jeux : ", resolve);
+			})
+			if(response === this.exit) {
+				rl.close();
+				return this.exit;
+			}
+			const game_id = Number(response);
+			if(!Number.isNaN(game_id)) {
+				rl.close();
+				return game_id;
+			}
+		}
+	}
+	async play_Red_Black_Game() {
+		console.log("Mise : ");
+		console.log("t = tapis");
+		console.log("d = double de la dernière mise");
+		console.log("p = précédende mise");
+		console.log("----------");
+		while(this.money > 0) {
+			this.bet = await this.get_bet();
+			this.last_bet = this.bet;
+			const game = new Red_Black_Game();
+			await game.start();
+			if(game.win) {
+				this.money += this.bet;
+				console.log("Gagné +", this.bet);				
+			} else {
+				this.money -= this.bet;
+				console.log("Perdu -", this.bet);
+			}
+			console.log("---");
+		}
+	}
 	async run() {
 		while(true) {
-			console.log("Mise : ");
-			console.log("t = tapis");
-			console.log("d = double de la dernière mise");
-			console.log("p = précédende mise");
+			console.log("Arrêt session : ", this.exit);
+			this.games_names.forEach((name, index) => {
+				console.log(index, name);
+			})
 			console.log("----------");
-			while(this.money > 0) {
-				this.bet = await this.get_bet();
-				this.last_bet = this.bet;
-				const game = new Red_Black_Game();
-				await game.start();
-				if(game.win) {
-					this.money += this.bet;
-					console.log("Gagné +", this.bet);				
-				} else {
-					this.money -= this.bet;
-					console.log("Perdu -", this.bet);
-				}
-				console.log("---");
+			const res_g = await this.choose_game();
+			if(res_g === this.exit) {
+				return;
 			}
-			console.log("----------");
-			console.log("Nouvelle partie");
-			console.log("----------");
+			switch(res_g) {
+				case 0:
+					console.log("Jeux : Rouge ou Noir");
+					console.log("----------");
+					await this.play_Red_Black_Game();
+					break
+				default:
+					console.log("Jeux introuvable")
+					console.log("----------");
+				break;
+			}
 			this.money = this.start_money;
 		}
 	}
