@@ -1,7 +1,11 @@
+const { resolve } = require('node:dns');
 const readline = require('node:readline');
 
-const Red_Black_Game = require("./Red_Black_Game.js");
-const { resolve } = require('node:dns');
+// games
+const game_path = "./games/";
+const Red_Black_Game = require(game_path + "Red_Black_Game.js");
+const Found_The_Quenn_Game = require(game_path + "Found_The_Quenn_Game.js");
+const Horse_Race_Game = require(game_path + "Horse_Race_Game.js");
 
 
 class Game_Session {
@@ -11,7 +15,9 @@ class Game_Session {
 		this.bet = 0;
 		this.last_bet = 0;
 		this.games_names = [
-			"Rouge ou Noir"
+			"Rouge ou Noir",
+			"!!! Trouve la Dame",
+			"!!! Course de chevaux"
 		]
 		this.exit = "exit";
 	}
@@ -52,6 +58,13 @@ class Game_Session {
 			}
 		}
 	}
+	bet_info() {
+		console.log("Mise : ");
+		console.log("t = tapis");
+		console.log("d = double de la dernière mise");
+		console.log("p = précédende mise");
+		console.log("----------");
+	}
 	async choose_game() {
 		const rl = new readline.createInterface({
 			input: process.stdin,
@@ -66,18 +79,14 @@ class Game_Session {
 				return this.exit;
 			}
 			const game_id = Number(response);
-			if(!Number.isNaN(game_id)) {
+			if(!Number.isNaN(game_id) && game_id <= this.games_names.length) {
 				rl.close();
 				return game_id;
 			}
 		}
 	}
 	async play_Red_Black_Game() {
-		console.log("Mise : ");
-		console.log("t = tapis");
-		console.log("d = double de la dernière mise");
-		console.log("p = précédende mise");
-		console.log("----------");
+		this.bet_info();
 		while(this.money > 0) {
 			this.bet = await this.get_bet();
 			this.last_bet = this.bet;
@@ -93,9 +102,29 @@ class Game_Session {
 			console.log("---");
 		}
 	}
+	async play_Found_The_Quenn_Game() {
+		this.bet_info();
+		while(this.money > 0) {
+			const game = new Found_The_Quenn_Game();
+			await game.start();
+		}
+	}
+	async play_Horse_Race_Game() {
+		this.bet_info();
+		while(this.money > 0) {
+			const game = new Horse_Race_Game();
+			await game.start();
+		}
+	}
 	async run() {
 		while(true) {
-			console.log("Arrêt session : ", this.exit);
+			const symbol_col = 160;
+			const symbol_row = 4;
+			const str = "|".repeat(symbol_col);
+			for(let i = 0 ; i < symbol_row ; i++) {
+				console.log(str);
+			}
+			console.log(this.exit, ": Arrêt session");
 			this.games_names.forEach((name, index) => {
 				console.log(index, name);
 			})
@@ -104,12 +133,18 @@ class Game_Session {
 			if(res_g === this.exit) {
 				return;
 			}
+			console.log("Jeux : ", this.games_names[res_g]);
+			console.log("----------");
 			switch(res_g) {
 				case 0:
-					console.log("Jeux : Rouge ou Noir");
-					console.log("----------");
 					await this.play_Red_Black_Game();
-					break
+					break;
+				case 1:
+					await this.play_Found_The_Quenn_Game();
+					break;
+				case 2:
+					await this.play_Horse_Race_Game();
+					break;
 				default:
 					console.log("Jeux introuvable")
 					console.log("----------");
