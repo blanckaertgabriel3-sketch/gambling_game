@@ -17,9 +17,16 @@ class Game_Session {
 		this.games_names = [
 			"Rouge ou Noir",
 			"!!! Trouve la Dame",
-			"!!! Course de chevaux"
+			"Course de chevaux"
 		]
-		this.exit = "exit";
+		this.options = {
+			exit: "exit"
+		};
+		// game_state
+		this.end_message = {
+			w: "Gagné + ",
+			l: "Perdu -"
+		};
 	}
 	valid_bet(bet) {
 		if(!bet) {
@@ -40,6 +47,10 @@ class Game_Session {
 			const answer = await new Promise(resolve => {
 				rl.question(this.money.toFixed(2) + " €, Mise : ", resolve)
 			})
+			if(this.is_option(answer)) {
+				rl.close();
+				return answer;
+			}
 			if(answer === "t") {
 				bet = this.money;
 			}
@@ -63,7 +74,30 @@ class Game_Session {
 		console.log("t = tapis");
 		console.log("d = double de la dernière mise");
 		console.log("p = précédende mise");
-		console.log("----------");
+	}
+	options_info() {
+		console.log("Options : ");
+		Object.values(this.options).forEach(option => {
+			console.log(option);
+		})
+	}
+	info() {
+		const separator = "-";
+		const separator_heigth = 40;
+		const small_separator_heigth = 20;
+		const separator_nb = 1;
+
+		console.log(separator.repeat(separator_heigth));
+		this.options_info();
+		console.log(separator.repeat(small_separator_heigth));
+		this.bet_info();
+		console.log(separator.repeat(separator_heigth));
+		for(let i = 0 ; i< separator_nb ; i ++) {
+			console.log("");
+		}
+	}
+	is_option(response) {
+		return Object.values(this.options).find(option => option === response);
 	}
 	async choose_game() {
 		const rl = new readline.createInterface({
@@ -74,9 +108,9 @@ class Game_Session {
 			const response = await new Promise(resolve => {
 				rl.question("Choix de jeux : ", resolve);
 			})
-			if(response === this.exit) {
+			if(response === this.options.exit) {
 				rl.close();
-				return this.exit;
+				return this.options.exit;
 			}
 			const game_id = Number(response);
 			if(!Number.isNaN(game_id) && game_id <= this.games_names.length) {
@@ -86,55 +120,83 @@ class Game_Session {
 		}
 	}
 	async play_Red_Black_Game() {
-		this.bet_info();
+		this.info();
 		while(this.money > 0) {
-			this.bet = await this.get_bet();
+			const res = await this.get_bet();
+			if(this.is_option(res) === this.options.exit) {
+				return;
+			} else {
+				this.bet = res;
+			}
 			this.last_bet = this.bet;
 			const game = new Red_Black_Game();
 			await game.start();
 			if(game.win) {
 				this.money += this.bet;
-				console.log("Gagné +", this.bet);				
+				console.log(this.end_message.w, this.bet);				
 			} else {
 				this.money -= this.bet;
-				console.log("Perdu -", this.bet);
+				console.log(this.end_message.l , this.bet);
 			}
 			console.log("---");
 		}
 	}
 	async play_Found_The_Quenn_Game() {
-		this.bet_info();
+		this.info();
 		while(this.money > 0) {
+			const res = await this.get_bet();
+			if(this.is_option(res) === this.options.exit) {
+				return;
+			} else {
+				this.bet = res;
+			}
+			this.last_bet = this.bet;
 			const game = new Found_The_Quenn_Game();
 			await game.start();
 		}
 	}
 	async play_Horse_Race_Game() {
-		this.bet_info();
+		this.info();
 		while(this.money > 0) {
+			const res = await this.get_bet();
+			if(this.is_option(res) === this.options.exit) {
+				return;
+			} else {
+				this.bet = res;
+			}
+			this.last_bet = this.bet;
 			const game = new Horse_Race_Game();
 			await game.start();
+			if(game.win) {
+				this.money += this.bet;
+				console.log(this.end_message.w, this.bet);
+			} else {
+				this.money -= this.bet;
+				console.log(this.end_message.l, this.bet);
+			}
 		}
 	}
 	async run() {
 		while(true) {
+			// game separator
 			const symbol_col = 160;
 			const symbol_row = 4;
 			const str = "|".repeat(symbol_col);
 			for(let i = 0 ; i < symbol_row ; i++) {
 				console.log(str);
 			}
-			console.log(this.exit, ": Arrêt session");
+			// game choices
 			this.games_names.forEach((name, index) => {
 				console.log(index, name);
 			})
-			console.log("----------");
+			console.log("");
 			const res_g = await this.choose_game();
-			if(res_g === this.exit) {
+			if(res_g === this.options.exit) {
 				return;
 			}
 			console.log("Jeux : ", this.games_names[res_g]);
-			console.log("----------");
+
+			// game launcher
 			switch(res_g) {
 				case 0:
 					await this.play_Red_Black_Game();
@@ -150,7 +212,10 @@ class Game_Session {
 					console.log("----------");
 				break;
 			}
-			this.money = this.start_money;
+
+			if(this.money <= 0) {
+				this.money = this.start_money;
+			}
 		}
 	}
 }
